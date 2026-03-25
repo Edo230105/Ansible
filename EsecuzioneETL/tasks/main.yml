@@ -1,0 +1,117 @@
+---
+# tasks file for ansible-visual-basic
+---
+- name: Compose paths
+  ansible.builtin.set_fact:
+    sofia_path: "{{ sofia_share_root }}\\{{ sofia_subfolder }}"
+    sofia_check_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_check }}"
+    sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
+    local_in_full: "{{ path_in }}\\{{ file_in }}"
+    local_out_full: "{{ path_out }}\\{{ file_out }}"
+    log_full: "{{ path_log }}\\{{ file_log }}"
+    etl_full: "{{ path_prog }}\\{{ etl_exe }}"
+
+- name: Init ret
+  ansible.builtin.set_fact:
+    ret: 0
+
+- name: Check Sofia folder exists
+  ansible.windows.win_stat:
+    path: "{{ sofia_path }}"
+  register: sofia_folder_stat
+  failed_when: false
+
+- name: Set ret for share/folder
+  ansible.builtin.set_fact:
+    ret: >-
+      {% if sofia_folder_stat is failed %}
+      30
+      {% elif not sofia_folder_stat.stat.exists %}
+      50
+      {% else %}
+      0
+      {% endif %}
+
+- name: Check check-file exists
+  ansible.windows.win_stat:
+    path: "{{ sofia_check_full }}"
+  register: sofia_check_stat
+  failed_when: false
+  when: ret == 0
+
+- name: Set ret if check-file missing
+  ansible.builtin.set_fact:
+    ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Ensure local folders exist
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ path_in }}"
+    - "{{ path_out }}"
+    - "{{ path_log }}"
+  when: ret == 0
+
+- name: Copy input CSV from Sofia to local
+  ansible.windows.win_copy:
+    src: "{{ sofia_in_full }}"
+    dest: "{{ local_in_full }}"
+    remote_src: true
+  register: copy_csv
+  failed_when: false
+  when: ret == 0
+
+- name: Run ETL
+  ansible.windows.win_command: '"{{ etl_full }}" {{ etl_arg }}'
+  register: etl_run
+  failed_when: false
+  when: ret == 0
+
+- name: Check output file exists
+  ansible.windows.win_stat:
+    path: "{{ local_out_full }}"
+  register: out_stat
+  failed_when: false
+  when: ret == 0
+
+- name: Set ret if output missing
+  ansible.builtin.set_fact:
+    ret: "{{ 0 if out_stat.stat.exists else 20 }}"
+  when: ret == 0
+
+- name: Delete check-file on Sofia
+  ansible.windows.win_file:
+    path: "{{ sofia_check_full }}"
+    state: absent
+  failed_when: false
+  when: ret == 0
+
+- name: Delete input CSV on Sofia
+  ansible.windows.win_file:
+    path: "{{ sofia_in_full }}"
+    state: absent
+  failed_when: false
+  when: ret == 0
+
+- name: Get domain and user
+  ansible.windows.win_command: >-
+    powershell -NoProfile -Command
+    "$u=$env:USERNAME; $d=$env:USERDNSDOMAIN; Write-Output ($d + '\' + $u)"
+  register: whoami_domain
+  changed_when: false
+  failed_when: false
+
+- name: Write log line
+  ansible.windows.win_lineinfile:
+    path: "{{ log_full }}"
+    create: true
+    line: "{{ (whoami_domain.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
+  failed_when: false
+
+- name: Fail if ret != 0
+  ansible.builtin.fail:
+    msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
+  when: ret != 0
+
