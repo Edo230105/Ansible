@@ -3,6 +3,9 @@
 ---
 - name: Compose paths
   ansible.builtin.set_fact:
+    sofia_path: "{{ sofia_share_root }}\\{{ sofia_subfolder }}"
+    sofia_check_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_check }}"
+    sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
     log_full: "{{ path_log }}\\{{ file_log }}"

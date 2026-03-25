@@ -102,13 +102,6 @@
   failed_when: false
   when: ret == 0
 
-- name: Delete input CSV on Sofia
-  ansible.windows.win_file:
-    path: "{{ sofia_in_full }}"
-    state: absent
-  failed_when: false
-  when: ret == 0
-
 - name: Get domain and user
   ansible.windows.win_command: >-
     powershell -NoProfile -Command
