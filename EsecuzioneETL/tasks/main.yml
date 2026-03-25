@@ -111,10 +111,10 @@
     ret: "{{ 0 if sav_stat.stat.exists else 64 }}"
   when: ret == 0
 
-- name: Get domain and user
+- name: Get User
   ansible.builtin.command: >
     cmd whoami
-  register: whoami_domain
+  register: whoami
   changed_when: false
   failed_when: false
 
@@ -122,7 +122,7 @@
   ansible.windows.win_lineinfile:
     path: "{{ log_full }}"
     create: true
-    line: "{{ (whoami_domain.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
+    line: "{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
   failed_when: false
 
 - name: Delete check-file on Sofia
