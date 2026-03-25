@@ -18,12 +18,18 @@ Role Ansible per Windows che sostituisce lo script **VBScript** del flusso **IOF
 - `20` = output mancante (export fallito)
 - `30` = share non raggiungibile
 - `50` = cartella su share non presente
-- `60-61-62` = File su local NON copiato CORRETTAMENTE
-- `70-71-72` = Folder Input su local non presente
-- `80` = Folder Output su local non presente
-- `90` = Folder Log su local non presente
-- `100` = File su Folder Input local non presente
-- `110` = File su Folder SAV local non presente
+- `6X` = ERRORI relativi ai File
+- `60` = file CSV assente
+- `61` = file copiato mancante
+- `62` = hash non corrispondente
+- `63` = file di input mancante
+- `64` = file SAV mancante
+- `7X` = ERRORI relativi ai Folder
+- `70` = cartella Input mancante
+- `71` = cartella Output mancante
+- `72` = cartella Log mancante
+- `73` = cartella SAV mancante
+
 
 ## Requisiti
 - Host target: **Windows**
