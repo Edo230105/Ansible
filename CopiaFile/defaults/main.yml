@@ -5,7 +5,11 @@ sofia_share_root: "\\direzione.gr-u.it\\data"
 sofia_subfolder: "ITFIN_FLOW_SwapArea"
 
 path_in: "C:\\Scarico\\IOFIN\\ETL\\Input\\Antiterr"
+path_out: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr"
+path_sav: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr\\SAV"
+path_log: "C:\\ITFIN_LOG"
 
 file_check: "Antiter_Fine.csv"
 file_in: "Enti_4_Antiterrorismo.csv"
 file_check: "Enti_4_Antiterrorismo.csv"
+file_log: "ITF_IOFIN_ANTITERRORISMO.Log"

@@ -16,61 +16,60 @@
   ansible.builtin.set_fact:
     ret: 0
 
-- name: Check local input folder exists
+- name: Ensure local Input folder Exist
   ansible.windows.win_stat:
     path: "{{ path_in }}"
-  register: local_in_folder_stat
+  register: folder_in_stat
   failed_when: false
 
-- name: Set ret for folder input
+- name: Set ret for folder Input
   ansible.builtin.set_fact:
-    ret: >-
-      {% if not local_in_folder_stat.stat.exists %}
-      70
-      {% else %}
-      0
-      {% endif %}
+    ret: "{{ 70 if (not folder_in_stat.stat.exists) else 0 }}"
+  when: ret == 0
 
-- name: Check local output folder exists
+- name: Ensure local Output folder Exist
   ansible.windows.win_stat:
     path: "{{ path_out }}"
-  register: local_out_folder_stat
+  register: folder_out_stat
   failed_when: false
 
-- name: Set ret for folder output
+- name: Set ret for folder Output
   ansible.builtin.set_fact:
-    ret: >-
-      {% if not local_out_folder_stat.stat.exists %}
-      80
-      {% else %}
-      0
-      {% endif %}
+    ret: "{{ 71 if (not folder_out_stat.stat.exists) else 0 }}"
+  when: ret == 0
 
-- name: Check local log folder exists
+- name: Ensure local Log folder Exist
   ansible.windows.win_stat:
     path: "{{ path_log }}"
-  register: local_log_folder_stat
+  register: folder_log_stat
   failed_when: false
 
-- name: Set ret for folder log
+- name: Set ret for folder Log
   ansible.builtin.set_fact:
-    ret: >-
-      {% if not local_log_folder_stat.stat.exists %}
-      90
-      {% else %}
-      0
-      {% endif %}
+    ret: "{{ 72 if (not folder_log_stat.stat.exists) else 0 }}"
+  when: ret == 0
 
-- name: Check check-file exists
+- name: Ensure local SAV folder Exist
+  ansible.windows.win_stat:
+    path: "{{ path_sav }}"
+  register: folder_sav_stat
+  failed_when: false
+
+- name: Set ret for folder SAV
+  ansible.builtin.set_fact:
+    ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Check Input-file exists
   ansible.windows.win_stat:
     path: "{{ local_in_full }}"
-  register: local_check_stat
+  register: local_in_stat
   failed_when: false
   when: ret == 0
 
-- name: Set ret if check-file missing
+- name: Set ret if Input-file missing
   ansible.builtin.set_fact:
-    ret: "{{ 100 if (not local_check_stat.stat.exists) else 0 }}"
+    ret: "{{ 63 if (not local_in_stat.stat.exists) else 0 }}"
   when: ret == 0
 
 - name: Run ETL
@@ -91,20 +90,6 @@
     ret: "{{ 0 if out_stat.stat.exists else 20 }}"
   when: ret == 0
 
-- name: Delete check-file on Sofia
-  ansible.windows.win_file:
-    path: "{{ sofia_check_full }}"
-    state: absent
-  failed_when: false
-  when: ret == 0
-
-- name: Delete input CSV on Sofia
-  ansible.windows.win_file:
-    path: "{{ sofia_in_full }}"
-    state: absent
-  failed_when: false
-  when: ret == 0
-
 - name: Copy output TXT from Output to SAV
   ansible.windows.win_copy:
     src: "{{ local_out_full }}"
@@ -123,13 +108,12 @@
   
 - name: Set ret if sav missing
   ansible.builtin.set_fact:
-    ret: "{{ 0 if sav_stat.stat.exists else 110 }}"
+    ret: "{{ 0 if sav_stat.stat.exists else 64 }}"
   when: ret == 0
 
 - name: Get domain and user
-  ansible.windows.win_command: >-
-    powershell -NoProfile -Command
-    "$u=$env:USERNAME; $d=$env:USERDNSDOMAIN; Write-Output ($d + '\' + $u)"
+  ansible.builtin.command: >
+    cmd whoami
   register: whoami_domain
   changed_when: false
   failed_when: false
@@ -141,8 +125,24 @@
     line: "{{ (whoami_domain.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
   failed_when: false
 
+- name: Delete check-file on Sofia
+  ansible.windows.win_file:
+    path: "{{ sofia_check_full }}"
+    state: absent
+  failed_when: false
+  when: ret == 0
+
+- name: Delete input CSV on Sofia
+  ansible.windows.win_file:
+    path: "{{ sofia_in_full }}"
+    state: absent
+  failed_when: false
+  when: ret == 0
+
 - name: Fail if ret != 0
   ansible.builtin.fail:
     msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
   when: ret != 0
+
+
 

@@ -7,6 +7,7 @@
     sofia_check_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_check }}"
     sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
+    local_check_full: "{{ path_in }}\\{{ file_check }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
 
 - name: Init ret
@@ -30,7 +31,7 @@
       0
       {% endif %}
 
-- name: Check check-file exists
+- name: Controllo File_Check exists
   ansible.windows.win_stat:
     path: "{{ sofia_check_full }}"
   register: sofia_check_stat
@@ -42,19 +43,65 @@
     ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
   when: ret == 0
 
-- name: Ensure local folders exist
-  ansible.windows.win_file:
-    path: "{{ item }}"
-    state: directory
-  loop:
-    - "{{ path_in }}"
-    - "{{ path_out }}"
-    - "{{ path_log }}"
+- name: Controllo File_CSV exists
+  ansible.windows.win_stat:
+    path: "{{ sofia_in_full }}"
+  register: sofia_in_stat
+  failed_when: false
+  when: ret == 0
+
+- name: Set ret if CSV-file missing
+  ansible.builtin.set_fact:
+    ret: "{{ 60 if (not sofia_in_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Ensure local Input folder Exist
+  ansible.windows.win_stat:
+    path: "{{ path_in }}"
+  register: folder_in_stat
+  failed_when: false
+
+- name: Set ret for folder Input
+  ansible.builtin.set_fact:
+    ret: "{{ 70 if (not folder_in_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Ensure local Output folder Exist
+  ansible.windows.win_stat:
+    path: "{{ path_out }}"
+  register: folder_out_stat
+  failed_when: false
+
+- name: Set ret for folder Output
+  ansible.builtin.set_fact:
+    ret: "{{ 71 if (not folder_out_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Ensure local Log folder Exist
+  ansible.windows.win_stat:
+    path: "{{ path_log }}"
+  register: folder_log_stat
+  failed_when: false
+
+- name: Set ret for folder Log
+  ansible.builtin.set_fact:
+    ret: "{{ 72 if (not folder_log_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Ensure local SAV folder Exist
+  ansible.windows.win_stat:
+    path: "{{ path_sav }}"
+  register: folder_sav_stat
+  failed_when: false
+
+- name: Set ret for folder SAV
+  ansible.builtin.set_fact:
+    ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
   when: ret == 0
 
 - name: Calcolo hash del file sorgente
   ansible.builtin.command: >
-    cmd /C certutil -hashfile "{{ source_path }}" {{ hash_algo }}
+    cmd /C certutil -hashfile "{{ sofia_in_full }}" {{ hash_algo }}
   register: hash_source_raw
 
 - name: Estraggo hash sorgente
@@ -72,43 +119,28 @@
 
 - name: Check copied file exists
   ansible.windows.win_stat:
-    path: "{{ local_out_full }}"
-  register: out_stat
+    path: "{{ local_in_full }}"
+  register: csv_stat
   failed_when: false
   when: ret == 0
 
 - name: Set ret if output missing
   ansible.builtin.set_fact:
-    ret: "{{ 0 if out_stat.stat.exists else 20 }}"
+    ret: "{{ 0 if csv_stat.stat.exists else 61 }}"
   when: ret == 0
 
-- name: Calcolo hash del file copiato
+- name: Calcolo hash del file sorgente copiato
   ansible.builtin.command: >
-    cmd /C certutil -hashfile "{{ local_out_full }}" {{ hash_algo }}
-  register: hash_copied_raw
+    cmd /C certutil -hashfile "{{ local_check_full }}" {{ hash_algo }}
+  register: hash_copied_source_raw
 
-- name: Estraggo hash copiato
+- name: Estraggo hash Sorgente copiato
   ansible.builtin.set_fact:
-    hash_copied: "{{ hash_copied_raw.stdout_lines[1] | trim }}"
+    hash_copied_source: "{{ hash_copied_raw.stdout_lines[1] | trim }}"
 
 - name: Check hash
   set_fact:
-    ret: "{{ 0 if hash_source == hash_copied else 60 }}"
-
-- name: Delete check-file on Sofia
-  ansible.windows.win_file:
-    path: "{{ sofia_check_full }}"
-    state: absent
-  failed_when: false
-  when: ret == 0
-
-- name: Get domain and user
-  ansible.windows.win_command: >-
-    powershell -NoProfile -Command
-    "$u=$env:USERNAME; $d=$env:USERDNSDOMAIN; Write-Output ($d + '\' + $u)"
-  register: whoami_domain
-  changed_when: false
-  failed_when: false
+    ret: "{{ 0 if hash_source == hash_copied_source else 62 }}"
 
 - name: Fail if ret != 0
   ansible.builtin.fail:
