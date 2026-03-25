@@ -1,0 +1,19 @@
+---
+# defaults file for ansible-visual-basic
+---
+sofia_share_root: "\\\\direzione.gr-u.it\\data\\ITFIN_SOFIA"
+sofia_subfolder: "IOF_Antiterrorismo"
+
+path_in: "C:\\Scarico\\IOFIN\\ETL\\Input\\Antiterr"
+path_out: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr"
+path_prog: "C:\\Scarico\\IOFIN\\Binary"
+
+file_check: "Antiter_Fine.csv"
+file_in: "Enti_4_Antiterrorismo.csv"
+file_out: "Antiter.txt"
+
+path_log: "C:\\ITFIN_LOG"
+file_log: "ITF_IOFIN_ANTITERRORISMO.Log"
+
+etl_exe: "ETLFileManager.Cliente.exe"
+etl_arg: "-AN:antiterr"

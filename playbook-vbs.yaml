@@ -1,0 +1,5 @@
+- name: Run VBScript flow as Ansible role
+  hosts: windows_etl_host
+  gather_facts: true
+  roles:
+    - ansible-visual-basic
