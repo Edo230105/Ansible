@@ -9,6 +9,7 @@
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_check_full: "{{ path_in }}\\{{ file_check }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
+    log_full: "{{ path_log }}\\{{ file_log }}"
 
 - name: Init ret
   ansible.builtin.set_fact:
@@ -147,3 +148,9 @@
     msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
   when: ret != 0
 
+- name: Write log line
+  ansible.windows.win_lineinfile:
+    path: "{{ log_full }}"
+    create: true
+    line: "{{ (whoami_domain.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
+  failed_when: false
