@@ -3,9 +3,6 @@
 ---
 - name: Compose paths
   ansible.builtin.set_fact:
-    sofia_path: "{{ sofia_share_root }}\\{{ sofia_subfolder }}"
-    sofia_check_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_check }}"
-    sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
     log_full: "{{ path_log }}\\{{ file_log }}"
@@ -15,52 +12,61 @@
   ansible.builtin.set_fact:
     ret: 0
 
-- name: Check Sofia folder exists
+- name: Check local input folder exists
   ansible.windows.win_stat:
-    path: "{{ sofia_path }}"
-  register: sofia_folder_stat
+    path: "{{ path_in }}"
+  register: local_in_folder_stat
   failed_when: false
 
-- name: Set ret for share/folder
+- name: Set ret for folder input
   ansible.builtin.set_fact:
     ret: >-
-      {% if sofia_folder_stat is failed %}
-      30
-      {% elif not sofia_folder_stat.stat.exists %}
-      50
+      {% if not local_in_folder_stat.stat.exists %}
+      70
+      {% else %}
+      0
+      {% endif %}
+
+- name: Check local output folder exists
+  ansible.windows.win_stat:
+    path: "{{ path_out }}"
+  register: local_out_folder_stat
+  failed_when: false
+
+- name: Set ret for folder output
+  ansible.builtin.set_fact:
+    ret: >-
+      {% if not local_out_folder_stat.stat.exists %}
+      80
+      {% else %}
+      0
+      {% endif %}
+
+- name: Check local log folder exists
+  ansible.windows.win_stat:
+    path: "{{ path_log }}"
+  register: local_log_folder_stat
+  failed_when: false
+
+- name: Set ret for folder log
+  ansible.builtin.set_fact:
+    ret: >-
+      {% if not local_log_folder_stat.stat.exists %}
+      90
       {% else %}
       0
       {% endif %}
 
 - name: Check check-file exists
   ansible.windows.win_stat:
-    path: "{{ sofia_check_full }}"
-  register: sofia_check_stat
+    path: "{{ local_in_full }}"
+  register: local_check_stat
   failed_when: false
   when: ret == 0
 
 - name: Set ret if check-file missing
   ansible.builtin.set_fact:
-    ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
-  when: ret == 0
-
-- name: Ensure local folders exist
-  ansible.windows.win_file:
-    path: "{{ item }}"
-    state: directory
-  loop:
-    - "{{ path_in }}"
-    - "{{ path_out }}"
-    - "{{ path_log }}"
-  when: ret == 0
-
-- name: Copy input CSV from Sofia to local
-  ansible.windows.win_copy:
-    src: "{{ sofia_in_full }}"
-    dest: "{{ local_in_full }}"
-    remote_src: true
-  register: copy_csv
-  failed_when: false
+    ret: "{{ 100 if (not local_check_stat.stat.exists) else 0 }}"
   when: ret == 0
 
 - name: Run ETL

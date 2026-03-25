@@ -1,8 +1,7 @@
 ---
 # defaults file for ansible-visual-basic
 ---
-sofia_share_root: "\\direzione.gr-u.it\\data"
-sofia_subfolder: "ITFIN_FLOW_SwapArea"
+
 
 path_in: "C:\\Scarico\\IOFIN\\ETL\\Input\\Antiterr"
 path_out: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr"

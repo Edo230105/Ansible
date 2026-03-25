@@ -8,8 +8,6 @@
     sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
-    log_full: "{{ path_log }}\\{{ file_log }}"
-    etl_full: "{{ path_prog }}\\{{ etl_exe }}"
 
 - name: Init ret
   ansible.builtin.set_fact:
@@ -54,6 +52,15 @@
     - "{{ path_log }}"
   when: ret == 0
 
+- name: Calcolo hash del file sorgente
+  ansible.builtin.command: >
+    cmd /C certutil -hashfile "{{ source_path }}" {{ hash_algo }}
+  register: hash_source_raw
+
+- name: Estraggo hash sorgente
+  set_fact:
+    hash_source: "{{ hash_source_raw.stdout_lines[1] | trim }}"
+
 - name: Copy input CSV from Sofia to local
   ansible.windows.win_copy:
     src: "{{ sofia_in_full }}"
@@ -63,13 +70,7 @@
   failed_when: false
   when: ret == 0
 
-- name: Run ETL
-  ansible.windows.win_command: '"{{ etl_full }}" {{ etl_arg }}'
-  register: etl_run
-  failed_when: false
-  when: ret == 0
-
-- name: Check output file exists
+- name: Check copied file exists
   ansible.windows.win_stat:
     path: "{{ local_out_full }}"
   register: out_stat
@@ -80,6 +81,19 @@
   ansible.builtin.set_fact:
     ret: "{{ 0 if out_stat.stat.exists else 20 }}"
   when: ret == 0
+
+- name: Calcolo hash del file copiato
+  ansible.builtin.command: >
+    cmd /C certutil -hashfile "{{ local_out_full }}" {{ hash_algo }}
+  register: hash_copied_raw
+
+- name: Estraggo hash copiato
+  ansible.builtin.set_fact:
+    hash_copied: "{{ hash_copied_raw.stdout_lines[1] | trim }}"
+
+- name: Check hash
+  set_fact:
+    ret: "{{ 0 if hash_source == hash_copied else 60 }}"
 
 - name: Delete check-file on Sofia
   ansible.windows.win_file:
@@ -101,13 +115,6 @@
     "$u=$env:USERNAME; $d=$env:USERDNSDOMAIN; Write-Output ($d + '\' + $u)"
   register: whoami_domain
   changed_when: false
-  failed_when: false
-
-- name: Write log line
-  ansible.windows.win_lineinfile:
-    path: "{{ log_full }}"
-    create: true
-    line: "{{ (whoami_domain.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
   failed_when: false
 
 - name: Fail if ret != 0
