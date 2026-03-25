@@ -10,10 +10,45 @@
     local_check_full: "{{ path_in }}\\{{ file_check }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
     log_full: "{{ path_log }}\\{{ file_log }}"
+    process_name: "ITF_IOFIN_ANTITERRORISMO"
 
 - name: Init ret
   ansible.builtin.set_fact:
     ret: 0
+
+- name: Get User
+  ansible.builtin.command: >
+    cmd whoami
+  register: whoami
+  changed_when: false
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] JOB {{ parent_build_id }} STARTED BY {{ (whoami.stdout | trim) }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Get Hostname
+  ansible.builtin.command: >
+    cmd hostname
+  register: hostname
+  changed_when: false
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ServerID: {{ hostname }} Time: {{ ansible_date_time.date }} {{ ansible_date_time.time }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Procedura {{ process_name }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .Inizio Folder Check" >> "{{ log_full }}"
+  failed_when: false
 
 - name: Check Sofia folder exists
   ansible.windows.win_stat:
@@ -31,30 +66,6 @@
       {% else %}
       0
       {% endif %}
-
-- name: Controllo File_Check exists
-  ansible.windows.win_stat:
-    path: "{{ sofia_check_full }}"
-  register: sofia_check_stat
-  failed_when: false
-  when: ret == 0
-
-- name: Set ret if check-file missing
-  ansible.builtin.set_fact:
-    ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
-  when: ret == 0
-
-- name: Controllo File_CSV exists
-  ansible.windows.win_stat:
-    path: "{{ sofia_in_full }}"
-  register: sofia_in_stat
-  failed_when: false
-  when: ret == 0
-
-- name: Set ret if CSV-file missing
-  ansible.builtin.set_fact:
-    ret: "{{ 60 if (not sofia_in_stat.stat.exists) else 0 }}"
-  when: ret == 0
 
 - name: Ensure local Input folder Exist
   ansible.windows.win_stat:
@@ -99,6 +110,55 @@
   ansible.builtin.set_fact:
     ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
   when: ret == 0
+    
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .Fine Folder Check con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ..Inizio File Check" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Controllo File_Check exists
+  ansible.windows.win_stat:
+    path: "{{ sofia_check_full }}"
+  register: sofia_check_stat
+  failed_when: false
+  when: ret == 0
+
+- name: Set ret if check-file missing
+  ansible.builtin.set_fact:
+    ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Controllo File_CSV exists
+  ansible.windows.win_stat:
+    path: "{{ sofia_in_full }}"
+  register: sofia_in_stat
+  failed_when: false
+  when: ret == 0
+
+- name: Set ret if CSV-file missing
+  ansible.builtin.set_fact:
+    ret: "{{ 60 if (not sofia_in_stat.stat.exists) else 0 }}"
+  when: ret == 0
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ..Fine File Check con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Inizio Copia File" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Export {{ sofia_in_full }} to  {{ local_in_full }}" >> "{{ log_full }}"
+  failed_when: false
 
 - name: Calcolo hash del file sorgente
   ansible.builtin.command: >
@@ -143,22 +203,19 @@
   set_fact:
     ret: "{{ 0 if hash_source == hash_copied_source else 62 }}"
 
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Fine Copia File con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ....{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
 - name: Fail if ret != 0
   ansible.builtin.fail:
     msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
   when: ret != 0
 
-- name: Get User
-  ansible.builtin.command: >
-    cmd whoami
-  register: whoami
-  changed_when: false
-  failed_when: false
-
-- name: Write log line
-  ansible.windows.win_lineinfile:
-    path: "{{ log_full }}"
-    create: true
-    line: "{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
-  failed_when: false
-
+{{ parent_build_id }}
