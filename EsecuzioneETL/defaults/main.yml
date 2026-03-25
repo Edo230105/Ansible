@@ -6,6 +6,7 @@ sofia_subfolder: "ITFIN_FLOW_SwapArea"
 
 path_in: "C:\\Scarico\\IOFIN\\ETL\\Input\\Antiterr"
 path_out: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr"
+path_sav: "C:\\Scarico\\IOFIN\\ETL\\Output\\Antiterr\\SAV"
 path_prog: "C:\\Scarico\\IOFIN\\Binary"
 
 file_check: "Antiter_Fine.csv"

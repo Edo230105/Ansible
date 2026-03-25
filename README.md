@@ -23,6 +23,7 @@ Role Ansible per Windows che sostituisce lo script **VBScript** del flusso **IOF
 - `80` = Folder Output su local non presente
 - `90` = Folder Log su local non presente
 - `100` = File su Folder Input local non presente
+- `110` = File su Folder SAV local non presente
 
 ## Requisiti
 - Host target: **Windows**

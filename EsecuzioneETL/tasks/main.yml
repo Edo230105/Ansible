@@ -8,6 +8,7 @@
     sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_out_full: "{{ path_out }}\\{{ file_out }}"
+    local_sav_full: "{{ path_sav }}\\{{ file_out }}"
     log_full: "{{ path_log }}\\{{ file_log }}"
     etl_full: "{{ path_prog }}\\{{ etl_exe }}"
 
@@ -102,6 +103,27 @@
     path: "{{ sofia_in_full }}"
     state: absent
   failed_when: false
+  when: ret == 0
+
+- name: Copy output TXT from Output to SAV
+  ansible.windows.win_copy:
+    src: "{{ local_out_full }}"
+    dest: "{{ local_sav_full }}"
+    remote_src: true
+  register: copy_txt
+  failed_when: false
+  when: ret == 0
+
+- name: Check copied file exists
+  ansible.windows.win_stat:
+    path: "{{ local_sav_full }}"
+  register: sav_stat
+  failed_when: false
+  when: ret == 0
+  
+- name: Set ret if sav missing
+  ansible.builtin.set_fact:
+    ret: "{{ 0 if sav_stat.stat.exists else 110 }}"
   when: ret == 0
 
 - name: Get domain and user
