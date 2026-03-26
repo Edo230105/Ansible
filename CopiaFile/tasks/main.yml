@@ -211,11 +211,9 @@
 - name: Write log line
   ansible.builtin.shell: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ....{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}" >> "{{ log_full }}"
-  failed_when: false
+  when: ret != 0
 
 - name: Fail if ret != 0
   ansible.builtin.fail:
     msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
   when: ret != 0
-
-{{ parent_build_id }}

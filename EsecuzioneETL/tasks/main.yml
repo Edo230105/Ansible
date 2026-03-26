@@ -16,6 +16,11 @@
   ansible.builtin.set_fact:
     ret: 0
 
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ....Inizio check Folder in Locale" >> "{{ log_full }}"
+  failed_when: false
+
 - name: Ensure local Input folder Exist
   ansible.windows.win_stat:
     path: "{{ path_in }}"
@@ -60,6 +65,16 @@
     ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
   when: ret == 0
 
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ....Fine check Folder con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .....Inizio check File di Input" >> "{{ log_full }}"
+  failed_when: false
+
 - name: Check Input-file exists
   ansible.windows.win_stat:
     path: "{{ local_in_full }}"
@@ -72,11 +87,31 @@
     ret: "{{ 63 if (not local_in_stat.stat.exists) else 0 }}"
   when: ret == 0
 
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .....Fine check File di Input con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ......Inizio Esecuzione ETL" >> "{{ log_full }}"
+  failed_when: false
+
 - name: Run ETL
   ansible.windows.win_command: '"{{ etl_full }}" {{ etl_arg }}'
   register: etl_run
   failed_when: false
   when: ret == 0
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ......Fine Esecuzione ETL con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .......Inizio check Output ETL" >> "{{ log_full }}"
+  failed_when: false
 
 - name: Check output file exists
   ansible.windows.win_stat:
@@ -89,6 +124,21 @@
   ansible.builtin.set_fact:
     ret: "{{ 0 if out_stat.stat.exists else 20 }}"
   when: ret == 0
+
+- name: Check output file readable
+  ansible.builtin.shell: >
+    cmd.exe /c "type {{ local_out_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .......Fine Check Output ETL con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .......Inizio Archiviazione Output ETL" >> "{{ log_full }}"
+  failed_when: false
 
 - name: Copy output TXT from Output to SAV
   ansible.windows.win_copy:
@@ -111,6 +161,11 @@
     ret: "{{ 0 if sav_stat.stat.exists else 64 }}"
   when: ret == 0
 
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ......Fine Archiviazione Output ETL con esito {{ ret }}" >> "{{ log_full }}"
+  failed_when: false
+
 - name: Get User
   ansible.builtin.command: >
     cmd whoami
@@ -119,10 +174,18 @@
   failed_when: false
 
 - name: Write log line
-  ansible.windows.win_lineinfile:
-    path: "{{ log_full }}"
-    create: true
-    line: "{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}"
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .......Fine esecuzione JOB {{ parent_build_id }} at {{ ansible_date_time.date }} {{ ansible_date_time.time }} con errore Ret: {{ ret }}" >> "{{ log_full }}"
+  when: ret != 0
+
+- name: Fail if ret != 0
+  ansible.builtin.fail:
+    msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
+  when: ret != 0
+
+- name: Write log line
+  ansible.builtin.shell: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ........Inizio Cancellazione Input in share Sofia esecuzione JOB {{ parent_build_id }} at {{ ansible_date_time.date }} {{ ansible_date_time.time }} con errore Ret: {{ ret }}" >> "{{ log_full }}"
   failed_when: false
 
 - name: Delete check-file on Sofia
@@ -138,11 +201,5 @@
     state: absent
   failed_when: false
   when: ret == 0
-
-- name: Fail if ret != 0
-  ansible.builtin.fail:
-    msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
-  when: ret != 0
-
 
 
