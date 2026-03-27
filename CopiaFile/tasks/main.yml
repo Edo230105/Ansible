@@ -107,8 +107,9 @@
 # Imposta codice errore 70 se cartella input mancante.
 - name: Set ret for folder Input
   ansible.builtin.set_fact:
-    ret: "{{ 70 if (not folder_in_stat.exists) else 0 }}"
+    ret: "{{ 70 if (folder_in_stat.stdout.strip() == 'MISSING') else 0 }}"
   when: ret == 0
+
 
 # Task: Ensure local Output folder Exist
 # Verifica che la cartella di output locale esista.
@@ -122,7 +123,7 @@
 # Imposta codice errore 71 se cartella output mancante.
 - name: Set ret for folder Output
   ansible.builtin.set_fact:
-    ret: "{{ 71 if (not folder_out_stat.exists) else 0 }}"
+    ret: "{{ 71 if (not folder_out_stat.stat.exists) else 0 }}"
   when: ret == 0
 
 # Task: Ensure local Log folder Exist
@@ -137,7 +138,7 @@
 # Imposta codice errore 72 se cartella log mancante.
 - name: Set ret for folder Log
   ansible.builtin.set_fact:
-    ret: "{{ 72 if (not folder_log_stat.exists) else 0 }}"
+    ret: "{{ 72 if (not folder_log_stat.stat.exists) else 0 }}"
   when: ret == 0
 
 # Task: Ensure local SAV folder Exist
@@ -152,7 +153,7 @@
 # Imposta codice errore 73 se cartella SAV mancante.
 - name: Set ret for folder SAV
   ansible.builtin.set_fact:
-    ret: "{{ 73 if (not folder_sav_stat.exists) else 0 }}"
+    ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
   when: ret == 0
     
 # Task: Write log line
