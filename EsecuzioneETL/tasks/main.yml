@@ -98,7 +98,10 @@
   failed_when: false
 
 - name: Run ETL
-  ansible.windows.win_command: '"{{ etl_full }}" {{ etl_arg }}'
+  ansible.windows.win_shell: >
+    "{{ etl_full }}" {{ etl_arg }}
+  args:
+    executable: cmd
   register: etl_run
   failed_when: false
   when: ret == 0

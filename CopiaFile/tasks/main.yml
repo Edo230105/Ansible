@@ -1,6 +1,5 @@
----
-# tasks file for ansible-visual-basic
----
+# Task: Compose paths
+# Imposta i percorsi locali e remoti usati da tutto il playbook.
 - name: Compose paths
   ansible.builtin.set_fact:
     sofia_path: "{{ sofia_share_root }}\\{{ sofia_subfolder }}"
@@ -8,119 +7,172 @@
     sofia_in_full: "{{ sofia_share_root }}\\{{ sofia_subfolder }}\\{{ file_in }}"
     local_in_full: "{{ path_in }}\\{{ file_in }}"
     local_check_full: "{{ path_in }}\\{{ file_check }}"
-    local_out_full: "{{ path_out }}\\{{ file_out }}"
+    local_out_full: "{{ path_out }}"
     log_full: "{{ path_log }}\\{{ file_log }}"
     process_name: "ITF_IOFIN_ANTITERRORISMO"
 
+# Task: Init ret
+# Inizializza la variabile di ritorno a 0 (successo) prima dei controlli.
 - name: Init ret
   ansible.builtin.set_fact:
     ret: 0
 
+# Task: Get User
+# Recupera l’utente corrente in esecuzione sulla macchina remota.
 - name: Get User
-  ansible.builtin.command: >
-    cmd whoami
+  ansible.builtin.raw: whoami
   register: whoami
   changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
-    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] JOB {{ parent_build_id }} STARTED BY {{ (whoami.stdout | trim) }}" >> "{{ log_full }}"
+  ansible.builtin.raw: >
+    cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] JOB {{ parent_build_id }} STARTED BY {{ whoami.stdout | trim }} >> {{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Get Hostname
+# Recupera il nome host della macchina remota.
 - name: Get Hostname
-  ansible.builtin.command: >
-    cmd hostname
+  ansible.windows.win_shell: >
+    hostname
+  args:
+    executable: cmd
   register: hostname
   changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ServerID: {{ hostname }} Time: {{ ansible_date_time.date }} {{ ansible_date_time.time }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Procedura {{ process_name }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .Inizio Folder Check" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Check Sofia folder exists
+# Verifica che la cartella condivisa di origine esista.
 - name: Check Sofia folder exists
   ansible.windows.win_stat:
     path: "{{ sofia_path }}"
   register: sofia_folder_stat
   failed_when: false
 
-- name: Set ret for share/folder
-  ansible.builtin.set_fact:
-    ret: >-
-      {% if sofia_folder_stat is failed %}
-      30
-      {% elif not sofia_folder_stat.stat.exists %}
-      50
-      {% else %}
-      0
-      {% endif %}
+#- name: Set ret for share/folder
+#  ansible.builtin.set_fact:
+#    ret: >-
+#      {% if sofia_folder_stat is failed %}
+#      30
+#      {% elif not sofia_folder_stat.stat.exists %}
+#      50
+#      {% else %}
+#      0
+#      {% endif %}
 
+#- name: Ensure local Input folder Exist
+#  ansible.windows.win_stat:
+#    path: "{{ path_in }}"
+#  register: folder_in_stat
+#  failed_when: false
+  
+# Task: Ensure local Input folder Exist
+# Verifica che la cartella di input locale esista.
 - name: Ensure local Input folder Exist
-  ansible.windows.win_stat:
-    path: "{{ path_in }}"
+  ansible.windows.win_shell: >
+    if exist "{{ path_in }}\*" (echo EXISTS) else (echo MISSING)
+  args:
+    executable: cmd
   register: folder_in_stat
-  failed_when: false
+  changed_when: false
 
+# Task: Set ret for folder Input
+# Imposta codice errore 70 se cartella input mancante.
 - name: Set ret for folder Input
   ansible.builtin.set_fact:
-    ret: "{{ 70 if (not folder_in_stat.stat.exists) else 0 }}"
+    ret: "{{ 70 if (not folder_in_stat.exists) else 0 }}"
   when: ret == 0
 
+# Task: Ensure local Output folder Exist
+# Verifica che la cartella di output locale esista.
 - name: Ensure local Output folder Exist
   ansible.windows.win_stat:
     path: "{{ path_out }}"
   register: folder_out_stat
   failed_when: false
 
+# Task: Set ret for folder Output
+# Imposta codice errore 71 se cartella output mancante.
 - name: Set ret for folder Output
   ansible.builtin.set_fact:
-    ret: "{{ 71 if (not folder_out_stat.stat.exists) else 0 }}"
+    ret: "{{ 71 if (not folder_out_stat.exists) else 0 }}"
   when: ret == 0
 
+# Task: Ensure local Log folder Exist
+# Verifica che la cartella log locale esista.
 - name: Ensure local Log folder Exist
   ansible.windows.win_stat:
     path: "{{ path_log }}"
   register: folder_log_stat
   failed_when: false
 
+# Task: Set ret for folder Log
+# Imposta codice errore 72 se cartella log mancante.
 - name: Set ret for folder Log
   ansible.builtin.set_fact:
-    ret: "{{ 72 if (not folder_log_stat.stat.exists) else 0 }}"
+    ret: "{{ 72 if (not folder_log_stat.exists) else 0 }}"
   when: ret == 0
 
+# Task: Ensure local SAV folder Exist
+# Verifica che la cartella SAV locale esista.
 - name: Ensure local SAV folder Exist
   ansible.windows.win_stat:
     path: "{{ path_sav }}"
   register: folder_sav_stat
   failed_when: false
 
+# Task: Set ret for folder SAV
+# Imposta codice errore 73 se cartella SAV mancante.
 - name: Set ret for folder SAV
   ansible.builtin.set_fact:
-    ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
+    ret: "{{ 73 if (not folder_sav_stat.exists) else 0 }}"
   when: ret == 0
     
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] .Fine Folder Check con esito {{ ret }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ..Inizio File Check" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Controllo File_Check exists
+# Verifica che il file di controllo sia presente nella condivisione.
 - name: Controllo File_Check exists
   ansible.windows.win_stat:
     path: "{{ sofia_check_full }}"
@@ -128,11 +180,15 @@
   failed_when: false
   when: ret == 0
 
+# Task: Set ret if check-file missing
+# Imposta codice errore 10 se il file di controllo mancante.
 - name: Set ret if check-file missing
   ansible.builtin.set_fact:
-    ret: "{{ 10 if (not sofia_check_stat.stat.exists) else 0 }}"
+    ret: "{{ 10 if (not sofia_check_stat.exists) else 0 }}"
   when: ret == 0
 
+# Task: Controllo File_CSV exists
+# Verifica che il file CSV di input esista nella condivisione.
 - name: Controllo File_CSV exists
   ansible.windows.win_stat:
     path: "{{ sofia_in_full }}"
@@ -140,35 +196,54 @@
   failed_when: false
   when: ret == 0
 
+# Task: Set ret if CSV-file missing
+# Imposta codice errore 60 se il CSV mancante.
 - name: Set ret if CSV-file missing
   ansible.builtin.set_fact:
-    ret: "{{ 60 if (not sofia_in_stat.stat.exists) else 0 }}"
+    ret: "{{ 60 if (not sofia_in_stat.exists) else 0 }}"
   when: ret == 0
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ..Fine File Check con esito {{ ret }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Inizio Copia File" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Export {{ sofia_in_full }} to  {{ local_in_full }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Calcolo hash del file sorgente
+# Calcola hash del file sorgente remoto per integrità.
 - name: Calcolo hash del file sorgente
-  ansible.builtin.command: >
-    cmd /C certutil -hashfile "{{ sofia_in_full }}" {{ hash_algo }}
+  ansible.builtin.raw: >
+    cmd.exe /c certutil -hashfile "{{ sofia_in_full }}" "{{ hash_algo | default('SHA256') }}"
   register: hash_source_raw
+  changed_when: false
+  failed_when: false
 
+# Task: Estraggo hash sorgente
+# Estrae l’hash calcolato dall’output del comando.
 - name: Estraggo hash sorgente
   set_fact:
     hash_source: "{{ hash_source_raw.stdout_lines[1] | trim }}"
 
+# Task: Copy input CSV from Sofia to local
+# Copia il file CSV dalla condivisione locale.
 - name: Copy input CSV from Sofia to local
   ansible.windows.win_copy:
     src: "{{ sofia_in_full }}"
@@ -176,8 +251,10 @@
     remote_src: true
   register: copy_csv
   failed_when: false
-  when: ret == 0
+  when: ret | int == 0
 
+# Task: Check copied file exists
+# Verifica che il file copiato esista in destinazione.
 - name: Check copied file exists
   ansible.windows.win_stat:
     path: "{{ local_in_full }}"
@@ -185,35 +262,56 @@
   failed_when: false
   when: ret == 0
 
+# Task: Set ret if output missing
+# Imposta errore 61 se il file copiato non esiste dopo copia.
 - name: Set ret if output missing
   ansible.builtin.set_fact:
-    ret: "{{ 0 if csv_stat.stat.exists else 61 }}"
+    ret: "{{ 0 if csv_stat.exists else 61 }}"
   when: ret == 0
 
+# Task: Calcolo hash del file sorgente copiato
+# Calcola hash del file copiato per confronto.
 - name: Calcolo hash del file sorgente copiato
-  ansible.builtin.command: >
-    cmd /C certutil -hashfile "{{ local_check_full }}" {{ hash_algo }}
+  ansible.builtin.raw: >
+    cmd.exe /c certutil -hashfile "{{ local_in_full }}" "{{ hash_algo | default('SHA256') }}"
   register: hash_copied_source_raw
+  changed_when: false
+  failed_when: false
 
+# Task: Estraggo hash Sorgente copiato
+# Estrae l’hash del file copiato.
 - name: Estraggo hash Sorgente copiato
-  ansible.builtin.set_fact:
-    hash_copied_source: "{{ hash_copied_raw.stdout_lines[1] | trim }}"
+  set_fact:
+    hash_copied_source: "{{ hash_copied_source_raw.stdout_lines[1] | trim }}"
 
+# Task: Check hash
+# Confronta hash sorgente e copiato e imposta errore 62 in caso di mismatch.
 - name: Check hash
   set_fact:
     ret: "{{ 0 if hash_source == hash_copied_source else 62 }}"
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ...Fine Copia File con esito {{ ret }}" >> "{{ log_full }}"
+  changed_when: false
   failed_when: false
 
+# Task: Write log line
+# Aggiunge una riga al file di log (più usi diversi nel flusso).
 - name: Write log line
-  ansible.builtin.shell: >
+  ansible.builtin.raw: >
     cmd.exe /c "echo [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] ....{{ (whoami.stdout | trim) }} {{ ansible_date_time.date }} {{ ansible_date_time.time }} Ret={{ ret }}" >> "{{ log_full }}"
+  changed_when: false
+  failed_when: false
   when: ret != 0
 
+# Task: Fail if ret != 0
+# Interrompe il playbook con errore se uno dei controlli ha fallito.
 - name: Fail if ret != 0
   ansible.builtin.fail:
     msg: "IOFIN Antiterrorismo failed with Ret={{ ret }}"
   when: ret != 0
+
+
