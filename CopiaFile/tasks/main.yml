@@ -114,46 +114,52 @@
 # Task: Ensure local Output folder Exist
 # Verifica che la cartella di output locale esista.
 - name: Ensure local Output folder Exist
-  ansible.windows.win_stat:
-    path: "{{ path_out }}"
+  ansible.windows.win_shell: >
+    if exist "{{ path_out }}\*" (echo EXISTS) else (echo MISSING)
+  args:
+    executable: cmd
   register: folder_out_stat
-  failed_when: false
+  changed_when: false
 
 # Task: Set ret for folder Output
 # Imposta codice errore 71 se cartella output mancante.
 - name: Set ret for folder Output
   ansible.builtin.set_fact:
-    ret: "{{ 71 if (not folder_out_stat.stat.exists) else 0 }}"
+    ret: "{{ 71 if (folder_out_stat.stdout.strip() == 'MISSING') else 0 }}"
   when: ret == 0
 
 # Task: Ensure local Log folder Exist
 # Verifica che la cartella log locale esista.
 - name: Ensure local Log folder Exist
-  ansible.windows.win_stat:
-    path: "{{ path_log }}"
+  ansible.windows.win_shell: >
+    if exist "{{ path_log }}\*" (echo EXISTS) else (echo MISSING)
+  args:
+    executable: cmd
   register: folder_log_stat
-  failed_when: false
+  changed_when: false
 
 # Task: Set ret for folder Log
 # Imposta codice errore 72 se cartella log mancante.
 - name: Set ret for folder Log
   ansible.builtin.set_fact:
-    ret: "{{ 72 if (not folder_log_stat.stat.exists) else 0 }}"
+    ret: "{{ 72 if (folder_log_stat.stdout.strip() == 'MISSING') else 0 }}"
   when: ret == 0
 
 # Task: Ensure local SAV folder Exist
 # Verifica che la cartella SAV locale esista.
 - name: Ensure local SAV folder Exist
-  ansible.windows.win_stat:
-    path: "{{ path_sav }}"
+  ansible.windows.win_shell: >
+    if exist "{{ path_sav }}\*" (echo EXISTS) else (echo MISSING)
+  args:
+    executable: cmd
   register: folder_sav_stat
-  failed_when: false
+  changed_when: false
 
 # Task: Set ret for folder SAV
 # Imposta codice errore 73 se cartella SAV mancante.
 - name: Set ret for folder SAV
   ansible.builtin.set_fact:
-    ret: "{{ 73 if (not folder_sav_stat.stat.exists) else 0 }}"
+    ret: "{{ 73 if (folder_sav_stat.stdout.strip() == 'MISSING') else 0 }}"
   when: ret == 0
     
 # Task: Write log line
